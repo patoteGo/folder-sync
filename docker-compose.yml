@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  directory-sync-app:
+    build: .
+    ports:
+      - "3095:3000"  # Frontend (Vite dev server) - external:internal
+      - "3001:3001"  # Backend (Express API)
+    volumes:
+      # Mount macOS directories to container paths
+      - /Users:/host-users:rw
+      - /Volumes:/host-volumes:rw
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
