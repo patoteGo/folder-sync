@@ -1,5 +1,5 @@
-import express from 'express';
-import cors from 'cors';
+import { createServer } from 'http';
+import { parse } from 'url';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,12 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 4100;
 
 // Helper function to convert container paths to host paths
 function convertToHostPath(containerPath) {
@@ -148,106 +143,130 @@ async function copyDirectory(src, dest, options = {}) {
   return results;
 }
 
-// API Routes
-
-// Check if a directory exists and get its info
-app.get('/api/directory/info', async (req, res) => {
-  try {
-    const { path: dirPath } = req.query;
-    
-    if (!dirPath) {
-      return res.status(400).json({ error: 'Path parameter is required' });
-    }
-
-    // Use container path directly for file operations
-    const containerPath = dirPath;
-    // Convert to host path only for display
-    const displayPath = convertToHostPath(dirPath);
-    
-    const info = await getDirectoryStats(containerPath);
-    
-    res.json({
-      path: displayPath,
-      ...info
+// Helper function to parse request body
+async function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Sync directories
-app.post('/api/sync', async (req, res) => {
-  try {
-    const { sourcePath, destinationPath, options = {} } = req.body;
-    
-    if (!sourcePath || !destinationPath) {
-      return res.status(400).json({ 
-        error: 'sourcePath and destinationPath are required' 
-      });
-    }
-
-    // Use container paths directly (don't convert them)
-    const containerSourcePath = sourcePath;
-    const containerDestPath = destinationPath;
-    
-    // Convert to host paths only for logging/display purposes
-    const displaySourcePath = convertToHostPath(sourcePath);
-    const displayDestPath = convertToHostPath(destinationPath);
-
-    console.log(`Starting sync from ${displaySourcePath} to ${displayDestPath}`);
-    console.log(`Container paths: ${containerSourcePath} to ${containerDestPath}`);
-    const startTime = Date.now();
-
-    // Check if source directory exists (using container path)
-    const sourceInfo = await getDirectoryStats(containerSourcePath);
-    if (!sourceInfo.exists) {
-      return res.status(400).json({
-        success: false,
-        error: `Source directory does not exist: ${displaySourcePath}`
-      });
-    }
-
-    // Perform the sync (using container paths)
-    const syncResults = await copyDirectory(containerSourcePath, containerDestPath, {
-      onlyNewer: options.onlyNewer !== false // Default to true
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch (error) {
+        resolve({});
+      }
     });
-
-    const duration = Date.now() - startTime;
-
-    console.log(`Sync completed in ${duration}ms:`, syncResults);
-
-    res.json({
-      success: true,
-      message: `Successfully synced ${syncResults.copiedFiles} files from ${displaySourcePath} to ${displayDestPath}`,
-      filesCount: syncResults.filesCount,
-      copiedFiles: syncResults.copiedFiles,
-      skippedFiles: syncResults.skippedFiles,
-      size: formatBytes(syncResults.totalSize),
-      duration,
-      errors: syncResults.errors,
-      sourcePath: displaySourcePath,
-      destinationPath: displayDestPath
-    });
-
-  } catch (error) {
-    console.error('Sync error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    message: 'Folder sync backend is running'
+    req.on('error', reject);
   });
+}
+
+// Helper function to send JSON response
+function sendJSON(res, data, statusCode = 200) {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.statusCode = statusCode;
+  res.end(JSON.stringify(data));
+}
+
+// Handle CORS preflight
+function handleCORS(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.statusCode = 200;
+  res.end();
+}
+
+// Create server
+const server = createServer(async (req, res) => {
+  const urlParts = parse(req.url, true);
+  const pathname = urlParts.pathname;
+  const query = urlParts.query;
+
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return handleCORS(res);
+  }
+
+  try {
+    // Check if a directory exists and get its info
+    if (pathname === '/api/directory/info' && req.method === 'GET') {
+      const dirPath = query.path;
+      
+      if (!dirPath) {
+        return sendJSON(res, { error: 'Path parameter is required' }, 400);
+      }
+
+      // Use container path directly for file operations
+      const containerPath = dirPath;
+      // Convert to host path only for display
+      const displayPath = convertToHostPath(dirPath);
+      
+      const info = await getDirectoryStats(containerPath);
+      
+      return sendJSON(res, {
+        path: displayPath,
+        ...info
+      });
+    }
+
+    // Sync directories
+    if (pathname === '/api/sync' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const { sourcePath, destinationPath, options = {} } = body;
+      
+      if (!sourcePath || !destinationPath) {
+        return sendJSON(res, { 
+          error: 'sourcePath and destinationPath are required' 
+        }, 400);
+      }
+
+      // Use container paths directly (don't convert them)
+      const containerSourcePath = sourcePath;
+      const containerDestPath = destinationPath;
+      
+      // Convert to host paths only for logging/display purposes
+      const displaySourcePath = convertToHostPath(sourcePath);
+      const displayDestPath = convertToHostPath(destinationPath);
+
+      console.log(`Starting sync from ${displaySourcePath} to ${displayDestPath}`);
+      console.log(`Container paths: ${containerSourcePath} to ${containerDestPath}`);
+      const startTime = Date.now();
+
+      const results = await copyDirectory(containerSourcePath, containerDestPath, options);
+      const duration = Date.now() - startTime;
+
+      console.log(`Sync completed: ${results.copiedFiles}/${results.filesCount} files copied in ${duration}ms`);
+
+      return sendJSON(res, {
+        success: true,
+        message: `Successfully synced ${results.copiedFiles} of ${results.filesCount} files`,
+        duration,
+        ...results
+      });
+    }
+
+    // Default 404 response
+    return sendJSON(res, { error: 'Not found' }, 404);
+
+  } catch (error) {
+    console.error('Server error:', error);
+    return sendJSON(res, { error: error.message }, 500);
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Folder sync backend running on port ${PORT}`);
-  console.log(`📁 Ready to sync directories on the host system`);
+server.listen(PORT, () => {
+  console.log(`Backend server started on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 }); 
