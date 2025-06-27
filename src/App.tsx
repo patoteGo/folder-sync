@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { FolderSync, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { FolderRelationship, SyncStats } from './types';
 import { AddRelationshipForm } from './components/AddRelationshipForm';
 import { RelationshipTable } from './components/RelationshipTable';
 import { StatsCards } from './components/StatsCards';
 import { CronScheduler } from './components/CronScheduler';
+import { DraggableHeader } from './components/DraggableHeader';
 import { useCronScheduler } from './hooks/useCronScheduler';
 import { syncService } from './services/syncService';
 import { LocalStorageService, getSampleRelationships } from './utils/localStorage';
@@ -145,32 +145,15 @@ function App() {
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]"></div>
       
-      {/* Header */}
-      <header className="relative bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50 shadow-2xl">
-        <div className="max-w-[75%] mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg">
-                <FolderSync className="text-white" size={28} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Directory Sync Manager</h1>
-                <p className="text-gray-400 mt-0.5">Manage your folder synchronization relationships</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setShowSettings(!showSettings)}
-              className={`p-3 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-2xl transition-all duration-200 border border-transparent hover:border-gray-700/50 ${showSettings ? 'bg-gray-800/50 text-white border-gray-700/50' : ''}`}
-            >
-              <Settings size={22} />
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Draggable Header */}
+      <DraggableHeader 
+        showSettings={showSettings}
+        onToggleSettings={() => setShowSettings(!showSettings)}
+      />
 
       {/* Main Content */}
-      <main className="relative max-w-[75%] mx-auto px-6 lg:px-8 py-12">
-        <div className="space-y-12">
+      <main className="relative max-w-[85%] mx-auto px-4 lg:px-6 py-6">
+        <div className="space-y-6">
           {/* Stats */}
           <StatsCards stats={stats} />
 

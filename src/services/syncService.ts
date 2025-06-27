@@ -12,7 +12,7 @@ export interface SyncResult {
 }
 
 class SyncService {
-  private baseUrl = 'http://localhost:3001/api';
+  private baseUrl = 'http://localhost:4100/api';
 
   private convertToContainerPath(path: string): string {
     // Convert user paths to container paths for the backend
@@ -74,7 +74,7 @@ class SyncService {
       if (error instanceof TypeError && error.message.includes('fetch')) {
         return {
           success: false,
-          message: 'Backend server not available. Make sure the sync service is running on port 3001.',
+          message: 'Backend server not available. Make sure the sync service is running on port 4100.',
           duration
         };
       }

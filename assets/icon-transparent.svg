@@ -1,0 +1,40 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4FC3F7;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.3)"/>
+    </filter>
+  </defs>
+  
+  <!-- Clockwise arrow (right side) -->
+  <path d="M 512 150 
+           A 300 300 0 0 1 812 450
+           L 770 450
+           A 258 258 0 0 0 512 192
+           L 512 120
+           L 430 200
+           L 512 280
+           L 512 210" 
+           fill="url(#blueGradient)" 
+           filter="url(#shadow)"
+           stroke="white" 
+           stroke-width="4"/>
+  
+  <!-- Counter-clockwise arrow (left side) -->
+  <path d="M 512 874 
+           A 300 300 0 0 1 212 574
+           L 254 574
+           A 258 258 0 0 0 512 832
+           L 512 904
+           L 594 824
+           L 512 744
+           L 512 814" 
+           fill="url(#blueGradient)" 
+           filter="url(#shadow)"
+           stroke="white" 
+           stroke-width="4"/>
+</svg> 
