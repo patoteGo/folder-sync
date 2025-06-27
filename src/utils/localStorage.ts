@@ -1,5 +1,13 @@
 import { FolderRelationship } from '../types';
 
+// Utility function to remove quotes from paths
+export const removeQuotesFromPath = (path: string): string => {
+  if (!path) return path;
+  
+  // Remove leading and trailing single or double quotes
+  return path.replace(/^['"]|['"]$/g, '');
+};
+
 const STORAGE_KEYS = {
   RELATIONSHIPS: 'folder-sync-relationships',
   CRON_SETTINGS: 'folder-sync-cron-settings',

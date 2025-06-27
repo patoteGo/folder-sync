@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Edit3, Trash2, RefreshCw, FolderOpen, Calendar, HardDrive, ArrowRight, ToggleLeft, ToggleRight, Save, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { FolderRelationship } from '../types';
 import { StatusBadge } from './StatusBadge';
+import { removeQuotesFromPath } from '../utils/localStorage';
 
 interface RelationshipTableProps {
   relationships: FolderRelationship[];
@@ -36,11 +37,14 @@ export const RelationshipTable: React.FC<RelationshipTableProps> = ({
   };
 
   const handleSaveEdit = (id: string) => {
-    onEdit(id, {
+    // Remove quotes from paths before saving
+    const cleanedEditData = {
       customName: editData.customName,
-      sourcePath: editData.sourcePath,
-      destinationPath: editData.destinationPath
-    });
+      sourcePath: removeQuotesFromPath(editData.sourcePath.trim()),
+      destinationPath: removeQuotesFromPath(editData.destinationPath.trim())
+    };
+    
+    onEdit(id, cleanedEditData);
     setEditingId(null);
     setEditData({ customName: '', sourcePath: '', destinationPath: '' });
   };

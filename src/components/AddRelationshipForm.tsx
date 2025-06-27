@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FolderPlus, Plus, Folder, ArrowRight } from 'lucide-react';
 import { FolderRelationship } from '../types';
+import { removeQuotesFromPath } from '../utils/localStorage';
 
 interface AddRelationshipFormProps {
   onAdd: (relationship: Omit<FolderRelationship, 'id'>) => void;
@@ -17,11 +18,15 @@ export const AddRelationshipForm: React.FC<AddRelationshipFormProps> = ({ onAdd 
     
     if (!sourcePath || !destinationPath) return;
 
-    const originalName = sourcePath.split('/').pop() || sourcePath.split('\\').pop() || 'Unknown';
+    // Remove quotes from paths before processing
+    const cleanSourcePath = removeQuotesFromPath(sourcePath.trim());
+    const cleanDestinationPath = removeQuotesFromPath(destinationPath.trim());
+
+    const originalName = cleanSourcePath.split('/').pop() || cleanSourcePath.split('\\').pop() || 'Unknown';
     
     onAdd({
-      sourcePath,
-      destinationPath,
+      sourcePath: cleanSourcePath,
+      destinationPath: cleanDestinationPath,
       originalName,
       customName: customName || originalName,
       lastSync: null,
